@@ -6,7 +6,6 @@
 #include <string>
 #include <windows.h>
 using namespace std;
-
 const int TableSize = 10;
 
 void CopyTables(bool GameTable1[TableSize][TableSize], bool GameTable2[TableSize][TableSize])
