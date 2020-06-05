@@ -1,4 +1,4 @@
-// Game_Of_Life_Task2.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// Game_Of_Life_Task3.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
 #include <fstream>
@@ -8,13 +8,14 @@
 #include <windows.h>
 #include <boost/program_options.hpp>
 #include <vector>
+#include <csignal>
 
 namespace opt = boost::program_options;
 using namespace std;
 const string CFileName = "settings.cfg";
 const string LFileName = "loadfile.txt";
 
-void CopyTables(vector<vector<bool>> &GameTable1, vector<vector<bool>> &GameTable2)
+void CopyTables(vector<vector<bool>>& GameTable1, vector<vector<bool>>& GameTable2)
 {
     for (int i = 0; i < GameTable1.size(); i++) {
         for (int j = 0; j < GameTable1[0].size(); j++) {
@@ -34,14 +35,14 @@ void PrintTable(vector<vector<bool>> GameTable) {
         std::cout << "\n";
     }
 }
-void SetCoordinates(vector<vector<bool>> &GameTable) {
-    int tempAmount,x, y;
+void SetCoordinates(vector<vector<bool>>& GameTable) {
+    int tempAmount, x, y;
     std::cout << "\nhow many alive cell do you want to set ? : (for basic blinker enter '0' ) ";
     std::cin >> tempAmount;
     if (tempAmount == 0) {
-        GameTable[(int)(GameTable.size() / 2)][(int)((GameTable[0].size() / 2)+1)] = true;
+        GameTable[(int)(GameTable.size() / 2)][(int)((GameTable[0].size() / 2) + 1)] = true;
         GameTable[(int)(GameTable.size() / 2)][(int)((GameTable[0].size() / 2))] = true;
-        GameTable[(int)(GameTable.size() / 2)][(int)((GameTable[0].size() / 2)-1)] = true;
+        GameTable[(int)(GameTable.size() / 2)][(int)((GameTable[0].size() / 2) - 1)] = true;
         return;
     }
     for (int i = 0; i < tempAmount; i++) {
@@ -57,7 +58,7 @@ void SetCoordinates(vector<vector<bool>> &GameTable) {
         }
     }
 }
-void CheckConditions(vector<vector<bool>> &GameTable) {
+void CheckConditions(vector<vector<bool>>& GameTable) {
     vector<vector<bool>> tempGameTable(GameTable.size(),
         vector<bool>(GameTable[0].size(), 0));
     CopyTables(tempGameTable, GameTable);
@@ -74,7 +75,7 @@ void CheckConditions(vector<vector<bool>> &GameTable) {
                         (h != 0 || v != 0)) //& check if it is controling itself instead of neighberhood
                     {
                         if (GameTable[i + h][j + v])
-                        {   
+                        {
                             ++tempCountAlive;
                         }
                     }
@@ -89,7 +90,7 @@ void CheckConditions(vector<vector<bool>> &GameTable) {
             //    Any live cell with two or three neighbors survives.
             //    Any dead cell with three live neighbors becomes a live cell.
             //    All other live cells die in the next generation.Similarly, all other dead cells stay dead.
-            
+
             if (GameTable[i][j]) {
                 //if cell alive
                 if (tempCountAlive < 2)
@@ -124,23 +125,101 @@ bool IsExist(const std::string& name) {
     ifstream f(name.c_str());
     return f.good();
 }
+string decodeLine(string s) {
+    string decodedOutput = "";
+    int secondIterator = 0;
+    for (int firstIterator = 0; firstIterator < s.length(); firstIterator++)
+    {
+        string counter = ""; int letterCoefficient = 0;
+
+        if (!isalpha(s[firstIterator]))
+            continue;
+        else
+        {
+            counter = s.substr(secondIterator, firstIterator - secondIterator);
+            secondIterator = firstIterator + 1; 
+            istringstream(counter) >> letterCoefficient;
+            for (int i = 0; i < letterCoefficient; i++)
+                decodedOutput += s[firstIterator];
+        }
+    }
+    return decodedOutput;
+}
+void SaveAsRLE(vector<vector<bool>> GameTable) {
+
+    fstream Lfile;
+    string temp;
+    Lfile.open(LFileName, fstream::out);
+
+    for (int i = 0; i < GameTable.size(); i++) {
+
+        for (int j = 0; j < GameTable[0].size(); j++) {
+
+            int count = 1;
+            while (j < GameTable[0].size() - 1 && GameTable[i][j] == GameTable[i][j + 1]) {
+                count++;
+                j++;
+            }
+            if (GameTable[i][j] == 0) {
+                temp = 'F';
+            }
+            else { temp = 'T'; }
+            Lfile <<count<<temp;
+
+        }
+        Lfile << "\n";
+    }
+    Lfile.close();
+}
+void signalHandler(int signum) {
+    string answer;
+    std::cout << "\n Load file created/updated.";
+    exit(signum);
+}
+void LoadFromRLE(vector<vector<bool>>& GameTable){
+    string myText,tempLine;
+    int rowCounter = 0;
+    ifstream inFile;
+    inFile.open(LFileName);
+    if (!inFile) {
+        std::cout << "Unable to open file";
+        exit(1); // terminate with error
+    }
+    //while morel lines
+    while (getline(inFile, myText)) {
+        tempLine = decodeLine(myText);
+        for (int i = 0; i < tempLine.size();i++) {
+            if (tempLine[i] == 'F') {
+                GameTable[rowCounter][i] = false;
+            }
+            else {
+                GameTable[rowCounter][i] = true;
+            }
+        }
+        rowCounter++;
+
+    }
+    inFile.close();
+}
 int main(int argc, char* argv[])
 {
-    cout << "Do you want set new table size and turn to default parameters? (Y/N)";
+    signal(SIGINT, signalHandler);
+    std::cout << "Do you want set new table size and turn to default parameters or continiou to loaded game ? (Y/N)";
     char answer;
-    cin >> answer;
+    std::cin >> answer;
     // chechk if config file already exist.
-    if (IsExist(CFileName)){
-        
+    if (IsExist(CFileName)) {
+
     }
-    else if(!IsExist(CFileName)){
-     //creating all file
-     fstream cfile;
-     cfile.open(CFileName, fstream::out);
-     cfile << "sizeX=10\nsizeY=10\nspeed=1\niterations=100\n";
-     cfile.close();
+    else if (!IsExist(CFileName)) {
+        //creating all file
+        fstream cfile;
+        cfile.open(CFileName, fstream::out);
+        cfile << "sizeX=10\nsizeY=10\nspeed=1\niterations=100\n";
+        cfile.close();
     }
-    if (answer == 'Y' || answer == 'y' ) {
+
+    if (answer == 'Y' || answer == 'y') {
         string tempX, tempY;
         cout << "Set table size widght = ";
         cin >> tempY;
@@ -148,11 +227,11 @@ int main(int argc, char* argv[])
         cin >> tempX;
         fstream cfile;
         cfile.open(CFileName, fstream::out);
-        cfile << "sizeX=" + tempX + "\nsizeY=" + tempY+ "\nspeed=1\niterations=100\n";
+        cfile << "sizeX=" + tempX + "\nsizeY=" + tempY + "\nspeed=1\niterations=100\n";
         cfile.close();
     }
-    
-       string line;
+
+    string line;
     // defining parameters
     opt::options_description desc("options");
     desc.add_options()
@@ -166,7 +245,7 @@ int main(int argc, char* argv[])
     //parsing and storing parameters in boost-options library
     opt::store(opt::parse_command_line(argc, argv, desc), vm);
     try {
-        opt::store(opt::parse_config_file("settings.cfg",desc),vm);
+        opt::store(opt::parse_config_file("settings.cfg", desc), vm);
     }
     catch (const opt::reading_file& e) {
         std::cout << "Error: " << e.what() << std::endl;
@@ -178,28 +257,27 @@ int main(int argc, char* argv[])
         std::cout << "Error: " << e.what() << std::endl;
         return 2;
     }
-    //if (vm.count("help")) {
-    //    std::cout << desc << "\n";
-    //    return 1;
-    //}
 
     // taking our sizes and speed back from config file
     int TableSizeX = vm["sizeX"].as<int>();
     int TableSizeY = vm["sizeY"].as<int>();
     int speed = vm["speed"].as<int>();
-    int iterations  = vm["iterations"].as<int>();
+    int iterations = vm["iterations"].as<int>();
+
+
     // creating 2d boardgame 
     vector<vector<bool>> GameTable(TableSizeX, vector<bool>(TableSizeY, 0));
 
-    //game flow
+    LoadFromRLE(GameTable);
     PrintTable(GameTable);
-    SetCoordinates(GameTable);
-    while (iterations>0) {
+    //SetCoordinates(GameTable);
+    while (iterations > 0) {
         system("cls");
         CheckConditions(GameTable);
         PrintTable(GameTable);
-        cout << to_string(iterations) + " iterations left";
-        Sleep(25000/speed);
+        std::cout << to_string(iterations) + " iterations left";
+        Sleep(2000 / speed);
+        SaveAsRLE(GameTable);
         iterations--;
     }
 }
