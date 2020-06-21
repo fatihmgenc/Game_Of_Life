@@ -7,6 +7,8 @@
 #include <boost/program_options.hpp>
 #include <vector>
 #include <csignal>
+#include <SFML/Graphics.hpp>
+
 
 using namespace std;
 namespace opt = boost::program_options;
@@ -135,7 +137,7 @@ string decodeLine(string s) {
         else
         {
             counter = s.substr(secondIterator, firstIterator - secondIterator);
-            secondIterator = firstIterator + 1; 
+            secondIterator = firstIterator + 1;
             istringstream(counter) >> letterCoefficient;
             for (int i = 0; i < letterCoefficient; i++)
                 decodedOutput += s[firstIterator];
@@ -162,7 +164,7 @@ void SaveAsRLE(vector<vector<bool>> GameTable) {
                 temp = 'F';
             }
             else { temp = 'T'; }
-            Lfile <<count<<temp;
+            Lfile << count << temp;
 
         }
         Lfile << "\n";
@@ -174,8 +176,8 @@ void signalHandler(int signum) {
     std::cout << "\n Load file created/updated.";
     exit(signum);
 }
-void LoadFromRLE(vector<vector<bool>>& GameTable){
-    string myText,tempLine;
+void LoadFromRLE(vector<vector<bool>>& GameTable) {
+    string myText, tempLine;
     int rowCounter = 0;
     ifstream inFile;
     inFile.open(LFileName);
@@ -186,7 +188,7 @@ void LoadFromRLE(vector<vector<bool>>& GameTable){
     //while morel lines
     while (getline(inFile, myText)) {
         tempLine = decodeLine(myText);
-        for (int i = 0; i < tempLine.size();i++) {
+        for (int i = 0; i < tempLine.size(); i++) {
             if (tempLine[i] == 'F') {
                 GameTable[rowCounter][i] = false;
             }
@@ -199,8 +201,16 @@ void LoadFromRLE(vector<vector<bool>>& GameTable){
     }
     inFile.close();
 }
+
+
 int main(int argc, char* argv[])
 {
+    const int CELL_SIZE = 30;
+    const sf::Vector2f CELL_VECTOR(CELL_SIZE, CELL_SIZE);
+
+#define WHITE sf::Color::White
+#define Red sf::Color::Red
+
     signal(SIGINT, signalHandler);
     std::cout << "Do you want set new table size and turn to default parameters or continiou to loaded game ? (Y/N) ";
     char answer;
@@ -275,17 +285,56 @@ int main(int argc, char* argv[])
     {
         SetCoordinates(GameTable);
     }
-     
-    PrintTable(GameTable);
 
-    while (iterations > 0) {
-        SaveAsRLE(GameTable);
-        system("cls");
-        CheckConditions(GameTable);
-        PrintTable(GameTable);
-        std::cout << to_string(iterations) + " iterations left";
-        Sleep(2000 / speed);
-        iterations--;
+    //PrintTable(GameTable);
+
+
+    sf::Font font;
+    font.loadFromFile("./arial.ttf");
+
+    sf::RenderWindow window(sf::VideoMode(CELL_SIZE * TableSizeX, CELL_SIZE * TableSizeY + 50), "Game of Life");
+    while (window.isOpen() && iterations > 0)
+    {
+        sf::Event event;
+        while (window.pollEvent(event))
+        {
+            switch (event.type)
+            {
+            case sf::Event::Closed:
+                window.close();
+                break;
+            }
+            window.clear(WHITE);
+            for (int x = 0; x < TableSizeX ; x++)
+            {
+                for (int y = 0; y < TableSizeY ;y++)
+                {
+
+                    sf::RectangleShape cell;
+                    cell.setPosition(x * CELL_SIZE, y * CELL_SIZE);
+                    cell.setSize(CELL_VECTOR);
+                    cell.setOutlineThickness(1);
+                    cell.setOutlineColor(sf::Color::Green);
+                    if (GameTable[x][y] == 1)
+                        cell.setFillColor(Red);
+                    else
+                        cell.setFillColor(WHITE);
+                    window.draw(cell);
+
+                }
+            }
+            window.display();
+
+            SaveAsRLE(GameTable);
+            system("cls");
+            CheckConditions(GameTable);
+            PrintTable(GameTable);
+            std::cout << to_string(iterations) + " iterations left";
+            Sleep(500 / speed);
+            iterations--;
+
+
+        }
+
     }
 }
-
