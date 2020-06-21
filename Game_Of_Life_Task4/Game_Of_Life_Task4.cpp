@@ -45,6 +45,7 @@ void SetCoordinates(vector<vector<bool>>& GameTable) {
         GameTable[(int)(GameTable.size() / 2)][(int)((GameTable[0].size() / 2) - 1)] = true;
         return;
     }
+    PrintTable(GameTable);
     for (int i = 0; i < tempAmount; i++) {
         std::cout << "\nrow and column for " << i << ". : ";
         std::cin >> x >> y;
@@ -212,7 +213,7 @@ int main(int argc, char* argv[])
 #define Red sf::Color::Red
 
     signal(SIGINT, signalHandler);
-    std::cout << "Do you want set new table size and turn to default parameters or continiou to loaded game ? (Y/N) ";
+    std::cout << "Do you want set new table size and turn to default parameters (Y) or continiou to game(also 'N' for loading saved game) ? (Y/N) ";
     char answer;
     std::cin >> answer;
     // chechk if config file already exist.
@@ -226,7 +227,6 @@ int main(int argc, char* argv[])
         cfile << "sizeX=10\nsizeY=10\nspeed=1\niterations=100\n";
         cfile.close();
     }
-
     if (answer == 'Y' || answer == 'y') {
         string tempX, tempY;
         cout << "Set table size widght = ";
@@ -292,17 +292,14 @@ int main(int argc, char* argv[])
     sf::Font font;
     font.loadFromFile("./arial.ttf");
 
-    sf::RenderWindow window(sf::VideoMode(CELL_SIZE * TableSizeX, CELL_SIZE * TableSizeY + 50), "Game of Life");
+    sf::RenderWindow window(sf::VideoMode(CELL_SIZE * TableSizeX, CELL_SIZE * TableSizeY + 50), "AdvC++");
     while (window.isOpen() && iterations > 0)
     {
         sf::Event event;
         while (window.pollEvent(event))
         {
-            switch (event.type)
-            {
-            case sf::Event::Closed:
+            if(event.type==sf::Event::Closed)
                 window.close();
-                break;
             }
             window.clear(WHITE);
             for (int x = 0; x < TableSizeX ; x++)
@@ -337,4 +334,3 @@ int main(int argc, char* argv[])
         }
 
     }
-}
